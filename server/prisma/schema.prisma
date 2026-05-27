@@ -1,0 +1,83 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: http://pris.ly/cli/prisma-accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Restaurant {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String
+  openTime    String
+  closeTime   String
+  totalTables Int
+  isOpen      Boolean  @default(true)
+}
+
+model Customer {
+  id           Int      @id @default(autoincrement())
+  name         String
+  phone        String
+  partySize    Int
+  queueToken   String   @unique
+  position     Int
+  status       String   @default("WAITING") // WAITING, SEATED, CANCELLED
+  joinedAt     DateTime @default(now())
+  orders       Order[]
+}
+
+model MenuItem {
+  id          Int         @id @default(autoincrement())
+  name        String
+  description String
+  price       Float
+  category    String      // Starters, Mains, Desserts
+  imageUrl    String?
+  isAvailable Boolean     @default(true)
+  orderItems  OrderItem[]
+}
+
+model Order {
+  id          Int         @id @default(autoincrement())
+  customerId  Int
+  customer    Customer    @relation(fields: [customerId], references: [id])
+  totalAmount Float
+  status      String      @default("PENDING") // PENDING, PREPARING, READY
+  createdAt   DateTime    @default(now())
+  items       OrderItem[]
+}
+
+model OrderItem {
+  id         Int      @id @default(autoincrement())
+  orderId    Int
+  order      Order    @relation(fields: [orderId], references: [id])
+  menuItemId Int
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id])
+  quantity   Int
+  price      Float
+}
+
+model Admin {
+  id           Int    @id @default(autoincrement())
+  email        String @unique
+  passwordHash String
+}
+
+model WaitPrediction {
+  id                   Int      @id @default(autoincrement())
+  estimatedWaitMinutes Int
+  waitRange            String
+  confidence           String
+  reasoning            String
+  peakHourWarning      Boolean
+  createdAt            DateTime @default(now())
+}
