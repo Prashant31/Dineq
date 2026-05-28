@@ -1,245 +1,214 @@
 # DineQ — Real-Time Restaurant Queue & Pre-Order System
 
-A full-stack web application enabling customers to join virtual restaurant queues remotely, pre-order food while waiting, and receive real-time table notifications. Features an AI-powered wait-time predictor using Google Gemini API that analyzes queue patterns, party sizes, and peak-hour demand to deliver confidence-scored estimates with natural language reasoning.
+A full-stack web application that solves the problem of unpredictable restaurant wait times. Customers can join virtual queues remotely, track their position in real-time, pre-order food while waiting, and receive instant notifications when their table is ready — eliminating the need to physically wait at the restaurant.
+
+## Problem Statement
+
+Customers visiting popular restaurants during peak hours face 30-60 minute waits without knowing exact wait times. This app provides real-time queue visibility, remote queue joining, and AI-powered wait-time predictions so diners can make informed decisions.
 
 ## Tech Stack
 
-**Frontend:**
-- React.js with TypeScript
-- Tailwind CSS for styling
-- React Router for navigation
-- Socket.io-client for real-time updates
-- React Hot Toast for notifications
-
-**Backend:**
-- Node.js with Express.js
-- Supabase (PostgreSQL) for database
-- Socket.io for real-time communication
-- JWT for authentication
-- bcryptjs for password hashing
-
-**AI:**
-- Google Gemini API (gemini-2.0-flash)
-- @google/generative-ai SDK
-
-**Database:**
-- PostgreSQL via Supabase
-- Row Level Security (RLS) enabled
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React.js, Tailwind CSS, React Router |
+| Backend | Node.js, Express.js |
+| Database | PostgreSQL, Prisma ORM |
+| Real-time | Socket.io (WebSockets) |
+| Authentication | JWT (JSON Web Tokens) |
+| AI | Groq API (LLaMA 3.3 70B) |
+| Password Hashing | bcryptjs |
 
 ## Features
 
-### Customer App
-- View restaurant information and current status
-- Join virtual queue with token generation
-- Real-time queue position tracking
-- AI-powered wait time predictions
-- Pre-order food while waiting
-- Live notifications when table is ready
+### Customer Side
+- Join virtual queue remotely with a unique token (e.g. `SG-042`)
+- Real-time queue position tracking via WebSocket
+- AI-powered wait-time prediction with confidence scoring and natural language reasoning
+- Browse full menu while waiting in queue
+- Pre-order food before being seated
+- Instant toast notification when table is ready
 
 ### Admin Dashboard
-- Secure JWT authentication
-- Real-time queue management
-- Seat or remove customers
-- Update order status
-- Menu management (CRUD operations)
-- AI wait predictions for queue management
+- Secure login with JWT authentication
+- Live queue management — seat or remove customers in real time
+- AI wait-time predictor visible at dashboard level
+- Order management — update status (Pending → Preparing → Ready)
+- Full menu CRUD — add, edit, delete dishes
 
 ### AI Wait-Time Predictor
-- Analyzes queue length, party sizes, table availability
-- Considers time of day, day of week
-- Factors in pre-orders for faster seating
-- Provides confidence scores and reasoning
-- 2-minute result caching
-- Automatic fallback on API failure
-
-## Environment Variables
-
-Create a `.env` file in the project root:
-
-```env
-# Server
-PORT=5000
-
-# Supabase (get from your Supabase project settings)
-VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your-anon-key
-
-# JWT
-JWT_SECRET=your-jwt-secret-here
-
-# Gemini AI (free at aistudio.google.com)
-VITE_GEMINI_API_KEY=your-gemini-api-key
-```
-
-### Getting API Keys
-
-1. **Supabase:** Create a free project at [supabase.com](https://supabase.com)
-   - Copy the Project URL and anon/public key from Settings > API
-
-2. **Gemini API:** Get a free key at [aistudio.google.com](https://aistudio.google.com)
-   - Create an API key and copy it
-
-## Setup Instructions
-
-### 1. Clone and Install Dependencies
-
-```bash
-# Install frontend dependencies
-npm install
-
-# Install server dependencies (already included in package.json)
-```
-
-### 2. Set Up Database
-
-The application uses Supabase for the database. Run the migrations:
-
-```bash
-# The migrations are automatically applied when you set up the Supabase project
-# or use the MCP tools to apply the migrations
-```
-
-### 3. Seed the Database
-
-```bash
-npm run seed
-```
-
-This will create:
-- Restaurant information
-- Admin user (admin@spicegarden.com / admin123)
-- 10 menu items across 3 categories
-
-### 4. Run the Application
-
-**Development (both frontend and backend):**
-```bash
-npm run dev:all
-```
-
-**Or run separately:**
-```bash
-# Terminal 1 - Backend server
-npm run dev:server
-
-# Terminal 2 - Frontend dev server
-npm run dev
-```
-
-### 5. Access the Application
-
-- **Customer App:** http://localhost:5173
-- **Admin Dashboard:** http://localhost:5173/admin/login
-
-## AI Wait-Time Prediction System
-
-The AI predictor uses Google Gemini API to provide intelligent wait estimates:
-
-### How It Works
-
-1. **Data Collection:**
-   - Current queue length
-   - Party sizes in queue
-   - Available tables
-   - Current time and day of week
-   - Number of pre-orders
-
-2. **Analysis:**
-   - Dinner hours (6PM-10PM) are considered busier
-   - Weekends have higher traffic
-   - Larger parties take longer to seat
-   - Pre-order customers get 10-15% faster seating
-
-3. **Prediction Output:**
-   - Estimated wait in minutes
-   - Wait range (e.g., "15-25 minutes")
-   - Confidence level (high/medium/low)
-   - Natural language reasoning
-   - Peak hour warning flag
-
-### Caching
-
-- Predictions are cached for 2 minutes
-- Cache invalidates automatically on queue changes
-- Reduces API calls and improves performance
-
-### Fallback
-
-If Gemini API fails, the system uses a fallback formula:
-```javascript
-estimatedWait = Math.ceil((queueLength * 35) / availableTables)
-```
-
-## API Endpoints
-
-### Public Endpoints
-- `GET /api/restaurant` - Restaurant info + queue length + latest AI prediction
-- `POST /api/queue/join` - Join queue (returns token + position + wait estimate)
-- `GET /api/queue/status/:token` - Current position + status + wait estimate
-- `GET /api/menu` - Full menu grouped by category
-- `POST /api/orders` - Place pre-order
-- `GET /api/ai/predict-wait` - AI wait prediction (cached)
-
-### Admin Endpoints (JWT Required)
-- `POST /api/auth/login` - Login (returns JWT)
-- `GET /api/admin/queue` - Full queue list
-- `PATCH /api/admin/queue/:id/seat` - Seat customer
-- `DELETE /api/admin/queue/:id` - Remove customer
-- `GET /api/admin/orders` - All orders
-- `PATCH /api/admin/orders/:id/status` - Update order status
-- `POST /api/menu` - Add menu item
-- `PATCH /api/menu/:id` - Edit menu item
-- `DELETE /api/menu/:id` - Delete menu item
-
-## Database Schema
-
-### Tables
-- `restaurants` - Restaurant settings
-- `customers` - Queue entries with tokens
-- `menu_items` - Restaurant menu
-- `orders` - Pre-orders
-- `order_items` - Items within orders
-- `admins` - Admin authentication
-- `wait_predictions` - AI prediction cache
-
-## Future Improvements
-
-- **Menu Recommendation Chatbot:** AI-powered dish suggestions based on preferences
-- **Sentiment Analysis:** Analyze customer feedback and reviews
-- **Multi-Restaurant Support:** Support multiple restaurants with separate queues
-- **Reservation System:** Book tables in advance
-- **SMS/Email Notifications:** Alert customers via SMS or email
-- **Analytics Dashboard:** Detailed insights on peak hours, popularity, etc.
-- **Loyalty Program:** Rewards for frequent customers
+- Powered by Groq API using LLaMA 3.3 70B model
+- Analyzes: queue length, party sizes, available tables, time of day, day of week, pre-order count
+- Returns: estimated wait range, confidence level (high/medium/low), natural language reasoning, peak hour warning
+- 10-minute in-memory cache to minimize API calls
+- Automatic fallback formula if API is unavailable
 
 ## Project Structure
 
 ```
 /dineq
 ├── server/
-│   ├── controllers/       # API controllers
-│   ├── middleware/        # Auth middleware
-│   ├── routes/            # Express routes
-│   ├── services/          # AI service
-│   ├── prisma/            # Schema and seed
-│   └── server.js          # Express + Socket.io
+│   ├── controllers/
+│   │   ├── authController.js
+│   │   ├── queueController.js
+│   │   ├── menuController.js
+│   │   ├── ordersController.js
+│   │   ├── restaurantController.js
+│   │   └── aiController.js
+│   ├── middleware/
+│   │   └── auth.js
+│   ├── routes/
+│   │   ├── auth.js
+│   │   ├── queue.js
+│   │   ├── menu.js
+│   │   ├── orders.js
+│   │   ├── restaurant.js
+│   │   └── ai.js
+│   ├── services/
+│   │   └── aiService.js
+│   ├── prisma/
+│   │   ├── schema.prisma
+│   │   └── seed.js
+│   └── server.js
 ├── src/
-│   ├── components/        # React components
-│   ├── context/           # Auth context
-│   ├── hooks/             # Custom hooks
+│   ├── components/
+│   │   ├── QueueCard.tsx
+│   │   ├── MenuCard.tsx
+│   │   ├── AdminTable.tsx
+│   │   └── ToastNotification.tsx
+│   ├── context/
+│   │   └── AuthContext.tsx
+│   ├── hooks/
+│   │   └── useSocket.js
 │   ├── pages/
-│   │   ├── admin/         # Admin pages
-│   │   └── ...            # Customer pages
-│   └── services/          # API services
-├── .env.example           # Environment template
-└── README.md              # This file
+│   │   ├── Home.tsx
+│   │   ├── Menu.tsx
+│   │   ├── Queue.tsx
+│   │   └── admin/
+│   │       ├── Login.tsx
+│   │       ├── Dashboard.tsx
+│   │       └── MenuManager.tsx
+│   └── services/
+│       └── api.ts
+├── .env.example
+└── README.md
 ```
+
+## Database Schema
+
+- **Restaurant** — name, timings, total tables, open/closed status
+- **Customer** — name, phone, party size, queue token, position, status
+- **MenuItem** — name, description, price, category, availability
+- **Order** — linked to customer, total amount, status
+- **OrderItem** — linked to order and menu item, quantity, price
+- **Admin** — email, bcrypt password hash
+- **WaitPrediction** — AI prediction logs with confidence and reasoning
+
+## API Endpoints
+
+### Public
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/restaurant` | Restaurant info + queue length + AI prediction |
+| POST | `/api/queue/join` | Join queue — returns token + position + wait estimate |
+| GET | `/api/queue/status/:token` | Current position and status |
+| GET | `/api/menu` | Full menu grouped by category |
+| POST | `/api/orders` | Place pre-order linked to queue token |
+| POST | `/api/ai/predict-wait` | Get AI wait prediction (cached 10 min) |
+
+### Admin (JWT Required)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/auth/login` | Admin login — returns JWT |
+| GET | `/api/admin/queue` | Full waiting queue |
+| PATCH | `/api/admin/queue/:id/seat` | Seat a customer |
+| DELETE | `/api/admin/queue/:id` | Remove customer from queue |
+| GET | `/api/admin/orders` | All pre-orders |
+| PATCH | `/api/admin/orders/:id/status` | Update order status |
+| POST | `/api/menu` | Add menu item |
+| PATCH | `/api/menu/:id` | Edit menu item |
+| DELETE | `/api/menu/:id` | Delete menu item |
+
+## Local Setup
+
+### Prerequisites
+- Node.js v18+
+- PostgreSQL
+
+### Steps
+
+**1. Clone the repository**
+```bash
+git clone https://github.com/Prashant31/Dineq.git
+cd Dineq
+```
+
+**2. Install dependencies**
+```bash
+npm install
+cd server && npm install && cd ..
+```
+
+**3. Create `.env` file in the root folder**
+```
+PORT=5000
+DATABASE_URL=postgresql://postgres:yourpassword@localhost:5432/dineq
+JWT_SECRET=your_jwt_secret_here
+GROQ_API_KEY=your_groq_api_key_here
+```
+
+Get a free Groq API key at: https://console.groq.com (no credit card required)
+
+**4. Create the database**
+```bash
+psql -U postgres -c "CREATE DATABASE dineq;"
+```
+
+**5. Run migrations and seed data**
+```bash
+cd server
+npx prisma migrate dev --name init
+node prisma/seed.js
+cd ..
+```
+
+**6. Start the application**
+```bash
+npm run dev:all
+```
+
+**7. Open in browser**
+- Customer App: http://localhost:5173
+- Admin Dashboard: http://localhost:5173/admin/login
+- Admin credentials: `admin@spicegarden.com` / `admin123`
+
+## How the AI Prediction Works
+
+Every time the queue changes (someone joins, gets seated, or is removed), the app calls the Groq API with the following context:
+
+```json
+{
+  "queueLength": 4,
+  "partySizes": [2, 3, 1, 4],
+  "availableTables": 7,
+  "currentTime": "7:45 PM",
+  "dayOfWeek": "Saturday",
+  "preOrderCount": 2
+}
+```
+
+The LLaMA 3.3 model applies restaurant-specific rules (peak hours, weekend traffic, party size impact) and returns a structured JSON prediction with wait range, confidence level, and human-readable reasoning.
+
+Results are cached for 10 minutes to reduce API usage. If the API fails, a mathematical fallback kicks in automatically.
+
+## Future Improvements
+
+- **Menu recommendation chatbot** — AI suggests dishes based on dietary preferences
+- **Sentiment analysis** — Analyze customer feedback after dining
+- **Multi-restaurant support** — Platform for multiple restaurants
+- **SMS/Email notifications** — Alert customers when table is near ready
+- **Analytics dashboard** — Peak hour trends, popular dishes, average wait times
+- **Reservation system** — Book tables in advance
 
 ## License
 
-MIT License - Free to use for personal and commercial projects.
-
----
-
-Built with ❤️ for portfolio demonstration
-
+MIT License — Free to use for personal and commercial projects.
